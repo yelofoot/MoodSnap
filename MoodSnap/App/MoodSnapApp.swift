@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct MoodSnapApp: App {
+    private let container = AppContainer()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(container: container)
         }
     }
 }
