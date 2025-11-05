@@ -9,7 +9,7 @@ import ARKit
 import AVFoundation
 
 final class ARFaceCameraService: CameraService {
-    private let bufferStream = CVPixelBufferStream()
+    private let bufferStream = AsyncStreamBridge<CVPixelBuffer>()
     var pixelBufferStream: AsyncStream<CVPixelBuffer> { bufferStream.stream }
     var previewLayer: AVCaptureVideoPreviewLayer? { nil } // ARKit view uses ARSCNView, handled by SwiftUI representable
 
@@ -28,3 +28,4 @@ final class ARFaceCameraService: CameraService {
         bufferStream.finish()
     }
 }
+

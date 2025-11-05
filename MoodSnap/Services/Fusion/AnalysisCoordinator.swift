@@ -7,11 +7,13 @@
 
 import Foundation
 import CoreVideo
+import Combine
 
 @MainActor
 final class AnalysisCoordinator: ObservableObject {
     @Published private(set) var state = FusedState()
     @Published private(set) var isRecording = false
+    @Published var lastErrorMessage: String? = nil
 
     private let camera: CameraService
     private let emotion: EmotionInferencing
@@ -22,7 +24,7 @@ final class AnalysisCoordinator: ObservableObject {
 
     init(camera: CameraService, emotion: EmotionInferencing, speech: SpeechTranscribing) {
         self.camera = camera
-        this.emotion = emotion
+        self.emotion = emotion
         self.speech = speech
     }
 
@@ -32,7 +34,13 @@ final class AnalysisCoordinator: ObservableObject {
 
         cameraTask = Task { [weak self] in
             guard let self else { return }
-            try? await camera.start()
+            do { try await camera.start() } catch {
+                await MainActor.run { [weak self] in
+                    self?.lastErrorMessage = (error as NSError).localizedDescription
+                    self?.isRecording = false
+                }
+                return
+            }
             await emotion.start()
             for await buffer in camera.pixelBufferStream {
                 if let pred = await self.emotion.classify(pixelBuffer: buffer) {
@@ -44,7 +52,13 @@ final class AnalysisCoordinator: ObservableObject {
 
         speechTask = Task { [weak self] in
             guard let self else { return }
-            do { try await speech.start() } catch {}
+            do { try await speech.start() } catch {
+                await MainActor.run { [weak self] in
+                    self?.lastErrorMessage = (error as NSError).localizedDescription
+                    self?.isRecording = false
+                }
+                return
+            }
             for await u in speech.utterancesStream {
                 // tag with current emotion snapshot
                 let tagged = Utterance(text: u.text,
@@ -52,6 +66,9 @@ final class AnalysisCoordinator: ObservableObject {
                                        emotion: self.state.currentEmotion?.label,
                                        confidence: self.state.currentEmotion?.confidence)
                 self.state.utterances.append(tagged)
+                if self.state.utterances.count > 500 {
+                    self.state.utterances.removeFirst(self.state.utterances.count - 500)
+                }
                 if Task.isCancelled { break }
             }
         }
@@ -68,3 +85,4 @@ final class AnalysisCoordinator: ObservableObject {
         emotion.stop()
     }
 }
+

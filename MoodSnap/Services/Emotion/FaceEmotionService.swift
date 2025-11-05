@@ -8,20 +8,30 @@
 import Vision
 import CoreML
 import CoreVideo
+import Foundation
 
 final class FaceEmotionService: EmotionInferencing {
     private var request: VNCoreMLRequest?
     private var throttling = false
 
     func start() async {
-        // Generate model class after adding CNNEemotions.mlmodel to project
-        // Replace CNNEemotions() with your generated model type if different
-        if let model = try? VNCoreMLModel(for: CNNEemotions().model) {
-            let req = VNCoreMLRequest(model: model)
-            req.imageCropAndScaleOption = .centerCrop
-            self.request = req
+        // Load compiled CoreML model dynamically using configured resource name
+        let name = ModelConfig.emotionModelResourceName
+        if let url = Bundle.main.url(forResource: name, withExtension: "mlmodelc") {
+            print("FaceEmotionService: Found model resource at \(url.lastPathComponent)")
+            do {
+                let mlModel = try MLModel(contentsOf: url)
+                let model = try VNCoreMLModel(for: mlModel)
+                let req = VNCoreMLRequest(model: model)
+                req.imageCropAndScaleOption = VNImageCropAndScaleOption.centerCrop
+                self.request = req
+            } catch {
+                self.request = nil
+                print("FaceEmotionService: Failed to load model '\(name)': \(error)")
+            }
         } else {
             self.request = nil
+            print("FaceEmotionService: Model not found in bundle: \(name).mlmodelc")
         }
     }
 
@@ -52,3 +62,4 @@ final class FaceEmotionService: EmotionInferencing {
         return nil
     }
 }
+

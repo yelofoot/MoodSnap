@@ -10,6 +10,7 @@ import SwiftUI
 struct RecordView: View {
     @StateObject var coordinator: AnalysisCoordinator
     let systemCamera: SystemCameraService // for preview layer access
+    @State private var showErrorAlert = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -35,5 +36,13 @@ struct RecordView: View {
             .padding(.bottom, 32)
         }
         .navigationTitle("Record")
+        .onReceive(coordinator.$lastErrorMessage) { msg in
+            showErrorAlert = (msg != nil)
+        }
+        .alert("Error", isPresented: $showErrorAlert, actions: {
+            Button("OK") { coordinator.lastErrorMessage = nil }
+        }, message: {
+            Text(coordinator.lastErrorMessage ?? "Unknown error")
+        })
     }
 }

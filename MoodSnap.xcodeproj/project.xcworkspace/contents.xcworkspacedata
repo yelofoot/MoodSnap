@@ -4,4 +4,10 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:AsyncStreamBridge.swift">
+   </FileRef>
+   <FileRef
+      location = "group:ModelConfig.swift">
+   </FileRef>
 </Workspace>
