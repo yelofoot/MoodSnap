@@ -33,6 +33,15 @@ MoodSnap is a SwiftUI prototype for capturing short spoken moments while tagging
 1. Select a physical iOS device target. Ensure camera, microphone, and speech recognition are available and enabled in Settings.
 2. Build and run from Xcode. Grant permissions when prompted.
 3. Swipe to the center tab to view the camera HUD, tap **Record** to start transcribing, and review tagged utterances in the Transcript tab.
+- Real device with camera and microphone access; speech recognition permission must be granted.
+- A compiled Core ML emotion model placed in the app bundle matching `ModelConfig.emotionModelResourceName`.
+
+## Running the app
+1. Open `MoodSnap.xcodeproj` in Xcode.
+2. Ensure your Core ML model is added to the target with the expected name (e.g., `CNNEmotions.mlmodel` so it compiles to `CNNEmotions.mlmodelc`).
+3. Select a physical iOS device target (simulator lacks camera/mic + speech recognition for this workflow).
+4. Build and run. Grant camera, microphone, and speech recognition permissions when prompted.
+5. Swipe to the center tab to view the camera HUD, tap **Record** to start transcribing, and review tagged utterances in the Transcript tab.
 
 ## Notes
 - The history tab is a placeholder for future saved recordings.
