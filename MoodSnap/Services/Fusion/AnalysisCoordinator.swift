@@ -28,16 +28,15 @@ final class AnalysisCoordinator: ObservableObject {
         self.speech = speech
     }
 
-    func start() {
-        guard !isRecording else { return }
-        isRecording = true
+    func startPreviewIfNeeded() {
+        // Start camera + emotion inference once when the camera screen appears.
+        guard cameraTask == nil else { return }
 
         cameraTask = Task { [weak self] in
             guard let self else { return }
             do { try await camera.start() } catch {
                 await MainActor.run { [weak self] in
                     self?.lastErrorMessage = (error as NSError).localizedDescription
-                    self?.isRecording = false
                 }
                 return
             }
@@ -49,7 +48,13 @@ final class AnalysisCoordinator: ObservableObject {
                 if Task.isCancelled { break }
             }
         }
+    }
 
+    func startRecording() {
+        guard !isRecording else { return }
+        isRecording = true
+
+        // Start speech only when recording.
         speechTask = Task { [weak self] in
             guard let self else { return }
             do { try await speech.start() } catch {
@@ -74,15 +79,30 @@ final class AnalysisCoordinator: ObservableObject {
         }
     }
 
-    func stop() {
+    func stopRecording() {
+        guard isRecording else { return }
         isRecording = false
-        camera.stop()
         speech.stop()
-        cameraTask?.cancel()
         speechTask?.cancel()
-        cameraTask = nil
         speechTask = nil
+    }
+
+    func stopAll() {
+        // Stop recording if active
+        if isRecording { stopRecording() }
+        // Stop camera + emotion
+        camera.stop()
+        cameraTask?.cancel()
+        cameraTask = nil
         emotion.stop()
     }
-}
 
+    func resetAll() {
+        // Stop any ongoing work
+        stopAll()
+        // Clear published state for a clean demo restart
+        state = FusedState()
+        lastErrorMessage = nil
+        isRecording = false
+    }
+}

@@ -23,6 +23,7 @@ final class FaceEmotionService: EmotionInferencing {
                 let mlModel = try MLModel(contentsOf: url)
                 let model = try VNCoreMLModel(for: mlModel)
                 let req = VNCoreMLRequest(model: model)
+                print("FaceEmotionService: Model loaded and VNCoreMLRequest configured")
                 req.imageCropAndScaleOption = VNImageCropAndScaleOption.centerCrop
                 self.request = req
             } catch {
@@ -54,6 +55,7 @@ final class FaceEmotionService: EmotionInferencing {
             try handler.perform([request])
             if let results = request.results as? [VNClassificationObservation],
                let top = results.first {
+                // print("Emotion: \(top.identifier) (\(Int(top.confidence * 100))%)")
                 return EmotionPrediction(label: top.identifier, confidence: top.confidence)
             }
         } catch {

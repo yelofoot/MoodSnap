@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct RecordView: View {
-    @StateObject var coordinator: AnalysisCoordinator
+    @ObservedObject var coordinator: AnalysisCoordinator
     let systemCamera: SystemCameraService // for preview layer access
     @State private var showErrorAlert = false
 
@@ -22,21 +22,36 @@ struct RecordView: View {
                 .padding(.top, 48)
         }
         .overlay(alignment: .bottom) {
-            HStack(spacing: 20) {
-                Button(action: { coordinator.start() }) {
-                    Label("Start", systemImage: "record.circle")
+            VStack(spacing: 16) {
+                Button(action: {
+                    if coordinator.isRecording {
+                        coordinator.stopAll()
+                    } else {
+                        coordinator.startPreviewIfNeeded()
+                        coordinator.startRecording()
+                    }
+                }) {
+                    Image(systemName: coordinator.isRecording ? "stop.circle.fill" : "record.circle.fill")
+                        .font(.system(size: 72))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(coordinator.isRecording ? .red : .green)
+                        .shadow(radius: 4)
+                        .accessibilityLabel(coordinator.isRecording ? "Stop Recording" : "Start Recording")
                 }
-                .buttonStyle(.borderedProminent)
-
-                Button(role: .destructive, action: { coordinator.stop() }) {
-                    Label("Stop", systemImage: "stop.fill")
-                }
-                .buttonStyle(.bordered)
             }
+            .frame(maxWidth: .infinity)
             .padding(.bottom, 32)
         }
         .navigationTitle("Record")
-        .onReceive(coordinator.$lastErrorMessage) { msg in
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.black.ignoresSafeArea())
+        .onAppear {
+            coordinator.startPreviewIfNeeded()
+        }
+        .onDisappear {
+            coordinator.stopAll()
+        }
+        .onChange(of: coordinator.lastErrorMessage) { msg in
             showErrorAlert = (msg != nil)
         }
         .alert("Error", isPresented: $showErrorAlert, actions: {

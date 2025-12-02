@@ -44,13 +44,23 @@ final class SystemCameraService: NSObject, CameraService {
         }
 
         if !session.isRunning {
-            session.startRunning()
+            queue.async { [weak self] in
+                guard let self else { return }
+                if !self.session.isRunning {
+                    self.session.startRunning()
+                }
+            }
         }
     }
 
     func stop() {
-        if session.isRunning { session.stopRunning() }
-        bufferBridge.finish()
+        queue.async { [weak self] in
+            guard let self else { return }
+            if self.session.isRunning {
+                self.session.stopRunning()
+            }
+            self.bufferBridge.finish()
+        }
     }
 
     private func configureSession() throws {

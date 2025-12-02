@@ -31,6 +31,10 @@ final class SpeechTranscriptService: NSObject, SpeechTranscribing {
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
 
+        // Ensure any prior task is cancelled before starting a new one
+        recognitionTask?.cancel()
+        recognitionTask = nil
+
         recognitionTask = recognizer?.recognitionTask(with: request) { [weak self] result, error in
             guard let self else { return }
             if let result = result {
@@ -61,7 +65,7 @@ final class SpeechTranscriptService: NSObject, SpeechTranscribing {
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionTask?.cancel()
         recognitionTask = nil
-        utteranceBridge.finish()
+        // Do not finish the utterance stream; we want to reuse it across sessions.
     }
 
     private func requestSpeechAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
