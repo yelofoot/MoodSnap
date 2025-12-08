@@ -11,6 +11,7 @@ struct RecordView: View {
     @ObservedObject var coordinator: AnalysisCoordinator
     let systemCamera: SystemCameraService // for preview layer access
     @State private var showErrorAlert = false
+    var onRecordingFinished: ((_ transcript: String?, _ emotion: EmotionPrediction?) -> Void)? = nil
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -26,6 +27,9 @@ struct RecordView: View {
                 Button(action: {
                     if coordinator.isRecording {
                         coordinator.stopAll()
+                        // Recording has just stopped; forward the transcript + emotion to chat
+                        let transcript = coordinator.state.utterances.map { $0.text }.joined(separator: "\n")
+                        onRecordingFinished?(transcript, coordinator.state.currentEmotion)
                     } else {
                         coordinator.startPreviewIfNeeded()
                         coordinator.startRecording()

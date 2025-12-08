@@ -6,6 +6,9 @@ struct ContentView: View {
     @State private var selectedIndex: Int = 1 // center on camera
     @StateObject private var coordinator: AnalysisCoordinator
     @State private var showWelcome: Bool = true
+    @State private var shouldShowChat: Bool = false
+    @State private var chatTranscript: String? = nil
+    @State private var chatEmotion: EmotionPrediction? = nil
     @Environment(\.scenePhase) private var scenePhase
 
     init(container: AppContainer) {
@@ -34,19 +37,32 @@ struct ContentView: View {
 
             // Center: Camera (RecordView for demo)
             NavigationStack {
-                RecordView(coordinator: coordinator, systemCamera: container.systemCamera)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button {
-                                coordinator.resetAll()
-                                showWelcome = true
-                            } label: {
-                                Label("Restart", systemImage: "arrow.clockwise")
-                            }
-                            .accessibilityLabel("Restart App")
+                RecordView(coordinator: coordinator, systemCamera: container.systemCamera) { transcript, emotion in
+                    // Trigger navigation to the chat view once recording stops successfully.
+                    chatTranscript = transcript
+                    chatEmotion = emotion
+                    shouldShowChat = true
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            coordinator.resetAll()
+                            showWelcome = true
+                        } label: {
+                            Label("Restart", systemImage: "arrow.clockwise")
                         }
+                        .accessibilityLabel("Restart App")
                     }
+                }
+                .background {
+                    NavigationLink(isActive: $shouldShowChat) {
+                        ChatView(initialTranscript: chatTranscript, initialEmotion: chatEmotion)
+                    } label: {
+                        EmptyView()
+                    }
+                    .hidden()
+                }
             }
             .tag(1)
 
